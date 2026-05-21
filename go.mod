@@ -82,4 +82,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/free5gc/ngap => github.com/kassem-concordia/ngap main
+replace github.com/free5gc/ngap => github.com/kassem-concordia/ngap main //kassem

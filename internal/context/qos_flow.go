@@ -130,11 +130,11 @@ func buildGBRQosInformationFromModel(qos *models.QosData) *ngapType.GBRQosInform
 	return gbrInfo
 }
 
-func buildAltQoSParaSetList(altProfiles []*models.QosData) *ngapType.AlternativeQoSParaSetList { //kassem
+func buildAltQoSParaSetExt(altProfiles []*models.QosData) *ngapType.ProtocolExtensionContainerGBRQosInformationExtIEs { //kassem
 	if len(altProfiles) == 0 { 
 		return nil 
 	} 
-	list := &ngapType.AlternativeQoSParaSetList{} 
+	altList := &ngapType.AlternativeQoSParaSetList{} 
 	for i, alt := range altProfiles { 
 		if alt == nil { 
 			continue 
@@ -145,28 +145,46 @@ func buildAltQoSParaSetList(altProfiles []*models.QosData) *ngapType.Alternative
 		item := ngapType.AlternativeQoSParaSetItem{ 
 			AlternativeQoSParaSetIndex: ngapType.AlternativeQoSParaSetIndex{ 
 				Value: int64(i + 1), 
-			},
+			}, 
 		} 
-		// Populate GBR values for this alternative profile 
-		if alt.GbrDl != "" || alt.GbrUl != "" { 
-			item.GuaranteedFlowBitRateDL = new(ngapType.BitRate) 
-			item.GuaranteedFlowBitRateDL.Value = util.StringToBitRate(alt.GbrDl).Value 
-			item.GuaranteedFlowBitRateUL = new(ngapType.BitRate) 
-			item.GuaranteedFlowBitRateUL.Value = util.StringToBitRate(alt.GbrUl).Value 
+		if alt.GbrDl != "" { 
+			v := util.StringToBitRate(alt.GbrDl) 
+			item.GuaranteedFlowBitRateDL = &v 
 		} 
-		if alt.MaxbrDl != "" || alt.MaxbrUl != "" { 
-			item.MaximumFlowBitRateDL = new(ngapType.BitRate) 
-			item.MaximumFlowBitRateDL.Value = util.StringToBitRate(alt.MaxbrDl).Value 
-			item.MaximumFlowBitRateUL = new(ngapType.BitRate) 
-			item.MaximumFlowBitRateUL.Value = util.StringToBitRate(alt.MaxbrUl).Value 
+		if alt.GbrUl != "" { 
+			v := util.StringToBitRate(alt.GbrUl) 
+			item.GuaranteedFlowBitRateUL = &v 
 		} 
-		list.List = append(list.List, item) 
+		if alt.MaxbrDl != "" { 
+			v := util.StringToBitRate(alt.MaxbrDl) 
+			item.MaximumFlowBitRateDL = &v 
+		} 
+		if alt.MaxbrUl != "" { 
+			v := util.StringToBitRate(alt.MaxbrUl) 
+			item.MaximumFlowBitRateUL = &v 
+		} 
+		altList.List = append(altList.List, item)
 	} 
-	if len(list.List) == 0 { 
+	if len(altList.List) == 0 { 
 		return nil 
-	}
-	return list
-}//kaSSEM
+	} 
+	return &ngapType.ProtocolExtensionContainerGBRQosInformationExtIEs{ 
+		List: []ngapType.GBRQosInformationExtIEs{ 
+			{ 
+				Id: ngapType.ProtocolExtensionID{ 
+					Value: ngapType.ProtocolIEIDAlternativeQoSParaSetList, 
+				}, 
+				Criticality: ngapType.Criticality{ 
+					Value: ngapType.CriticalityPresentIgnore, 
+				}, 
+				ExtensionValue: ngapType.GBRQosInformationExtIEsExtensionValue{ 
+					Present:                   ngapType.GBRQosInformationExtIEsPresentAlternativeQoSParaSetList, 
+					AlternativeQoSParaSetList: altList, 
+				}, 
+			}, 
+		}, 
+	} 
+} //kassem
 
 
 func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupRequestItem, error) {
@@ -191,7 +209,7 @@ func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupReque
 
 		// Attach alternative QoS parameter sets when present
 		if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
-			parameter.GBRQosInformation.AlternativeQoSParaSetList = buildAltQoSParaSetList(q.AltQosProfiles)
+			parameter.GBRQosInformation.IEExtensions = buildAltQoSParaSetExt(q.AltQosProfiles) 
 		} //kassem
 	}
 
