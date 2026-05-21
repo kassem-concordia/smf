@@ -146,7 +146,7 @@ func buildAltQoSParaSetList(altProfiles []*models.QosData) *ngapType.Alternative
 			AlternativeQoSParaSetIndex: ngapType.AlternativeQoSParaSetIndex{ 
 				Value: int64(i + 1), 
 			},
-		} /
+		} 
 		// Populate GBR values for this alternative profile 
 		if alt.GbrDl != "" || alt.GbrUl != "" { 
 			item.GuaranteedFlowBitRateDL = new(ngapType.BitRate) 
@@ -188,7 +188,7 @@ func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupReque
 
 	if q.IsGBRFlow() {
 		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile)
-		
+
 		// Attach alternative QoS parameter sets when present
 		if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
 			parameter.GBRQosInformation.AlternativeQoSParaSetList = buildAltQoSParaSetList(q.AltQosProfiles)
