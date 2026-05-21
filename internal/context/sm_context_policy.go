@@ -65,6 +65,20 @@ func (c *SMContext) AddQosFlow(qfi uint8, qos *models.QosData) {
 	}
 }
 
+// AddQosFlowWithAltProfiles creates a QoSFlow and attaches its alternative QoS profiles.
+func (c *SMContext) AddQosFlowWithAltProfiles(qfi uint8, qos *models.QosData, altQosIDs []string) { //kassem
+	qosFlow := NewQoSFlow(qfi, qos) 
+	if qosFlow == nil { 
+		return 
+	} 
+	for _, altID := range altQosIDs {
+		if altProfile, ok := c.AltQosDatas[altID]; ok && altProfile != nil { 
+			qosFlow.AltQosProfiles = append(qosFlow.AltQosProfiles, altProfile) 
+		} 
+	} 
+	c.AdditonalQosFlows[qfi] = qosFlow 
+}//kassem
+
 func (c *SMContext) RemoveQosFlow(qfi uint8) {
 	delete(c.AdditonalQosFlows, qfi)
 }
@@ -117,6 +131,22 @@ func (c *SMContext) ApplyPccRules(decision *models.SmPolicyDecision) error {
 			tgtPcc.SetQFI(c.AssignQFI(tgtQosID))
 		}
 
+		altQosIDs := tgtPcc.RefAltQosParamIDs() //kassem
+		for _, altID := range altQosIDs { 
+			if altID == "" { 
+				continue 
+			} 
+			if altQosData, ok := decision.QosDecs[altID]; ok && altQosData != nil { 
+				c.AltQosDatas[altID] = altQosData 
+				logger.CtxLog.Debugf("processRule[%s]: cached AltQosData[%s]", id, altID) 
+			} else { 
+				// fall back to already-stored alt profile if not in this decision 
+				if _, stored := c.AltQosDatas[altID]; !stored { 
+					logger.CtxLog.Warnf("processRule[%s]: AltQosData[%s] not found in decision", id, altID) 
+				} 
+			} 
+		} //kassem
+
 		var srcTcData *TrafficControlData
 		if srcPcc := c.PCCRules[id]; srcPcc != nil {
 			c.Log.Infof("Modify PCCRule[%s]", id)
@@ -133,6 +163,11 @@ func (c *SMContext) ApplyPccRules(decision *models.SmPolicyDecision) error {
 		if err := applyFlowInfoOrPFD(tgtPcc); err != nil {
 			return err
 		}
+
+		if tgtQosID != "" && len(altQosIDs) > 0 { //kassem
+			c.AddQosFlowWithAltProfiles(tgtPcc.QFI, tgtQosData, altQosIDs) 
+		} //kassem
+
 		if err := checkUpPathChangeEvt(c, srcTcData, tgtTcData); err != nil {
 			c.Log.Warnf("Check UpPathChgEvent err: %v", err)
 		}

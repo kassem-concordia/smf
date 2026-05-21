@@ -69,6 +69,11 @@ func (r *PCCRule) RefTcDataID() string {
 	return ""
 }
 
+// RefAltQosParamIDs returns all alternative QoS parameter set IDs referenced by this PCC rule.
+func (r *PCCRule) RefAltQosParamIDs() []string { //kassem
+	return r.RefAltQosParams
+}
+
 func (r *PCCRule) IdentifyChargingLevel() (ChargingLevel, error) {
 	dlIPFilterRule, err := flowdesc.Decode(r.FlowDescription())
 	if err != nil {

@@ -180,6 +180,9 @@ type SMContext struct {
 	TrafficControlDatas map[string]*TrafficControlData
 	ChargingData        map[string]*models.ChargingData
 	QosDatas            map[string]*models.QosData
+	// AltQosDatas stores the alternative QoS parameter sets received from the PCF.
+	AltQosDatas map[string]*models.QosData //kassem
+
 
 	UpPathChgEarlyNotification map[string]*EventExposureNotification // Key: Uri+NotifId
 	UpPathChgLateNotification  map[string]*EventExposureNotification // Key: Uri+NotifId
@@ -301,6 +304,7 @@ func NewSMContext(id string, pduSessID int32) *SMContext {
 	smContext.SessionRules = make(map[string]*SessionRule)
 	smContext.TrafficControlDatas = make(map[string]*TrafficControlData)
 	smContext.QosDatas = make(map[string]*models.QosData)
+	smContext.AltQosDatas = make(map[string]*models.QosData) //kassem
 	smContext.UpPathChgEarlyNotification = make(map[string]*EventExposureNotification)
 	smContext.UpPathChgLateNotification = make(map[string]*EventExposureNotification)
 	smContext.DataPathToBeRemoved = make(map[int64]*DataPath)

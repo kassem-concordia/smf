@@ -22,6 +22,7 @@ type QoSFlow struct {
 	QFI        uint8
 	QoSProfile *models.QosData
 	State      QoSFlowState
+	AltQosProfiles []*models.QosData //kassem
 }
 
 func NewQoSFlow(qfi uint8, qosModel *models.QosData) *QoSFlow {
@@ -114,13 +115,59 @@ func buildGBRQosInformationFromModel(qos *models.QosData) *ngapType.GBRQosInform
 	if qos == nil {
 		return nil
 	}
-	return &ngapType.GBRQosInformation{
+	gbrInfo := &ngapType.GBRQosInformation{
 		MaximumFlowBitRateDL:    util.StringToBitRate(qos.MaxbrDl),
 		MaximumFlowBitRateUL:    util.StringToBitRate(qos.MaxbrUl),
 		GuaranteedFlowBitRateDL: util.StringToBitRate(qos.GbrDl),
 		GuaranteedFlowBitRateUL: util.StringToBitRate(qos.GbrUl),
 	}
+	if qos.Qnc { //kassem
+		notifCtrl := ngapType.NotificationControl{} 
+		notifCtrl.Value = ngapType.NotificationControlPresentNotificationRequested 
+		gbrInfo.NotificationControl = &notifCtrl 
+	} //kassem
+
+	return gbrInfo
 }
+
+func buildAltQoSParaSetList(altProfiles []*models.QosData) *ngapType.AlternativeQoSParaSetList { //kassem
+	if len(altProfiles) == 0 { 
+		return nil 
+	} 
+	list := &ngapType.AlternativeQoSParaSetList{} 
+	for i, alt := range altProfiles { 
+		if alt == nil { 
+			continue 
+		} 
+		if i >= 8 { 
+			break 
+		} 
+		item := ngapType.AlternativeQoSParaSetItem{ 
+			AlternativeQoSParaSetIndex: ngapType.AlternativeQoSParaSetIndex{ 
+				Value: int64(i + 1), 
+			},
+		} /
+		// Populate GBR values for this alternative profile 
+		if alt.GbrDl != "" || alt.GbrUl != "" { 
+			item.GuaranteedFlowBitRateDL = new(ngapType.BitRate) 
+			item.GuaranteedFlowBitRateDL.Value = util.StringToBitRate(alt.GbrDl).Value 
+			item.GuaranteedFlowBitRateUL = new(ngapType.BitRate) 
+			item.GuaranteedFlowBitRateUL.Value = util.StringToBitRate(alt.GbrUl).Value 
+		} 
+		if alt.MaxbrDl != "" || alt.MaxbrUl != "" { 
+			item.MaximumFlowBitRateDL = new(ngapType.BitRate) 
+			item.MaximumFlowBitRateDL.Value = util.StringToBitRate(alt.MaxbrDl).Value 
+			item.MaximumFlowBitRateUL = new(ngapType.BitRate) 
+			item.MaximumFlowBitRateUL.Value = util.StringToBitRate(alt.MaxbrUl).Value 
+		} 
+		list.List = append(list.List, item) 
+	} 
+	if len(list.List) == 0 { 
+		return nil 
+	}
+	return list
+}//kaSSEM
+
 
 func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupRequestItem, error) {
 	qosDesc := ngapType.QosFlowSetupRequestItem{}
@@ -141,6 +188,11 @@ func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupReque
 
 	if q.IsGBRFlow() {
 		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile)
+		
+		// Attach alternative QoS parameter sets when present
+		if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
+			parameter.GBRQosInformation.AlternativeQoSParaSetList = buildAltQoSParaSetList(q.AltQosProfiles)
+		} //kassem
 	}
 
 	var arpPriorityLevel int64
