@@ -111,7 +111,7 @@ func buildArpFromModels(arp *models.Arp) (int64, aper.Enumerated, aper.Enumerate
 	return arpPriorityLevel, arpPreEmptionCapability, arpPreEmptionVulnerability
 }
 
-func buildGBRQosInformationFromModel(qos *models.QosData) *ngapType.GBRQosInformation {
+func buildGBRQosInformationFromModel(qos *models.QosData, includeQNC bool) *ngapType.GBRQosInformation { 
 	if qos == nil {
 		return nil
 	}
@@ -121,69 +121,69 @@ func buildGBRQosInformationFromModel(qos *models.QosData) *ngapType.GBRQosInform
 		GuaranteedFlowBitRateDL: util.StringToBitRate(qos.GbrDl),
 		GuaranteedFlowBitRateUL: util.StringToBitRate(qos.GbrUl),
 	}
-	if qos.Qnc { //kassem
-		notifCtrl := ngapType.NotificationControl{} 
-		notifCtrl.Value = ngapType.NotificationControlPresentNotificationRequested 
-		gbrInfo.NotificationControl = &notifCtrl 
+	
+	if includeQNC && qos.Qnc { //kassem
+		gbrInfo.NotificationControl = &ngapType.NotificationControl{ //kassem
+			Value: ngapType.NotificationControlPresentNotificationRequested, //kassem
+		} //kassem
 	} //kassem
-
 	return gbrInfo
 }
 
 func buildAltQoSParaSetExt(altProfiles []*models.QosData) *ngapType.ProtocolExtensionContainerGBRQosInformationExtIEs { //kassem
-	if len(altProfiles) == 0 { 
-		return nil 
-	} 
-	altList := &ngapType.AlternativeQoSParaSetList{} 
-	for i, alt := range altProfiles { 
-		if alt == nil { 
-			continue 
-		} 
-		if i >= 8 { 
-			break 
-		} 
-		item := ngapType.AlternativeQoSParaSetItem{ 
-			AlternativeQoSParaSetIndex: ngapType.AlternativeQoSParaSetIndex{ 
-				Value: int64(i + 1), 
-			}, 
-		} 
-		if alt.GbrDl != "" { 
-			v := util.StringToBitRate(alt.GbrDl) 
-			item.GuaranteedFlowBitRateDL = &v 
-		} 
-		if alt.GbrUl != "" { 
-			v := util.StringToBitRate(alt.GbrUl) 
-			item.GuaranteedFlowBitRateUL = &v 
-		} 
-		if alt.MaxbrDl != "" { 
-			v := util.StringToBitRate(alt.MaxbrDl) 
-			item.MaximumFlowBitRateDL = &v 
-		} 
-		if alt.MaxbrUl != "" { 
-			v := util.StringToBitRate(alt.MaxbrUl) 
-			item.MaximumFlowBitRateUL = &v 
-		} 
-		altList.List = append(altList.List, item)
-	} 
-	if len(altList.List) == 0 { 
-		return nil 
-	} 
-	return &ngapType.ProtocolExtensionContainerGBRQosInformationExtIEs{ 
-		List: []ngapType.GBRQosInformationExtIEs{ 
-			{ 
-				Id: ngapType.ProtocolExtensionID{ 
-					Value: ngapType.ProtocolIEIDAlternativeQoSParaSetList, 
-				}, 
-				Criticality: ngapType.Criticality{ 
-					Value: ngapType.CriticalityPresentIgnore, 
-				}, 
-				ExtensionValue: ngapType.GBRQosInformationExtIEsExtensionValue{ 
-					Present:                   ngapType.GBRQosInformationExtIEsPresentAlternativeQoSParaSetList, 
-					AlternativeQoSParaSetList: altList, 
-				}, 
-			}, 
-		}, 
-	} 
+	if len(altProfiles) == 0 { //kassem
+		return nil //kassem
+	} //kassem
+	altList := &ngapType.AlternativeQoSParaSetList{} //kassem
+	for i, alt := range altProfiles { //kassem
+		if alt == nil { //kassem
+			continue //kassem
+		} //kassem
+		if i >= 8 { // TS 38.413 maxnoofQosParaSets = 8 //kassem
+			break //kassem
+		} //kassem
+		item := ngapType.AlternativeQoSParaSetItem{ //kassem
+			AlternativeQoSParaSetIndex: ngapType.AlternativeQoSParaSetIndex{ //kassem
+				Value: int64(i + 1), // 1-based index per spec //kassem
+			}, //kassem
+		} //kassem
+		if alt.GbrDl != "" { //kassem
+			v := util.StringToBitRate(alt.GbrDl) //kassem
+			item.GuaranteedFlowBitRateDL = &v //kassem
+		} //kassem
+		if alt.GbrUl != "" { //kassem
+			v := util.StringToBitRate(alt.GbrUl) //kassem
+			item.GuaranteedFlowBitRateUL = &v //kassem
+		} //kassem
+		if alt.MaxbrDl != "" { //kassem
+			v := util.StringToBitRate(alt.MaxbrDl) //kassem
+			item.MaximumFlowBitRateDL = &v //kassem
+		} //kassem
+		if alt.MaxbrUl != "" { //kassem
+			v := util.StringToBitRate(alt.MaxbrUl) //kassem
+			item.MaximumFlowBitRateUL = &v //kassem
+		} //kassem
+		altList.List = append(altList.List, item) //kassem
+	} //kassem
+	if len(altList.List) == 0 { //kassem
+		return nil //kassem
+	} //kassem
+	return &ngapType.ProtocolExtensionContainerGBRQosInformationExtIEs{ //kassem
+		List: []ngapType.GBRQosInformationExtIEs{ //kassem
+			{ //kassem
+				Id: ngapType.ProtocolExtensionID{ //kassem
+					Value: ngapType.ProtocolIEIDAlternativeQoSParaSetList, // 220 //kassem
+				}, //kassem
+				Criticality: ngapType.Criticality{ //kassem
+					Value: ngapType.CriticalityPresentIgnore, //kassem
+				}, //kassem
+				ExtensionValue: ngapType.GBRQosInformationExtIEsExtensionValue{ //kassem
+					Present:                   ngapType.GBRQosInformationExtIEsPresentAlternativeQoSParaSetList, //kassem
+					AlternativeQoSParaSetList: altList, //kassem
+				}, //kassem
+			}, //kassem
+		}, //kassem
+	} //kassem
 } //kassem
 
 
@@ -205,12 +205,7 @@ func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupReque
 	}
 
 	if q.IsGBRFlow() {
-		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile)
-
-		// Attach alternative QoS parameter sets when present
-		if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
-			parameter.GBRQosInformation.IEExtensions = buildAltQoSParaSetExt(q.AltQosProfiles) 
-		} //kassem
+		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile, false) //kassemm
 	}
 
 	var arpPriorityLevel int64
@@ -262,7 +257,12 @@ func (q *QoSFlow) BuildNgapQosFlowAddOrModifyRequestItem() (ngapType.QosFlowAddO
 	}
 
 	if q.IsGBRFlow() {
-		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile)
+		// includeQNC=true: attach NotificationControl on the Modify path.               //kassem
+		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile, true) //kassem
+		// Attach AlternativeQoSParaSetList via IE Extension (id=220) when present.      //kassem
+		if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
+			parameter.GBRQosInformation.IEExtensions = buildAltQoSParaSetExt(q.AltQosProfiles) //kassem
+		} //kassem
 	}
 
 	var arpPriorityLevel int64
