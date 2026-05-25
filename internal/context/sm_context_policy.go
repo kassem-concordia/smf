@@ -161,9 +161,10 @@ func (c *SMContext) ApplyPccRules(decision *models.SmPolicyDecision) error {
 			return err
 		}
 		if err := applyFlowInfoOrPFD(tgtPcc); err != nil {
+			c.Log.Errorf("[QNC-DEBUG] applyFlowInfoOrPFD failed for rule=%s: %v", id, err) //kassem
 			return err
 		}
-
+		c.Log.Infof("[QNC-DEBUG] reached AddQosFlowWithAltProfiles rule=%s altQosIDs=%v", id, altQosIDs) //kassem
 		if tgtQosID != "" && len(altQosIDs) > 0 { //kassem
 			c.AddQosFlowWithAltProfiles(tgtPcc.QFI, tgtQosData, altQosIDs) 
 		} //kassem
