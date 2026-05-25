@@ -178,7 +178,7 @@ func buildAltQoSParaSetExt(altProfiles []*models.QosData) *ngapType.ProtocolExte
 					Value: ngapType.CriticalityPresentIgnore, 
 				}, 
 				ExtensionValue: ngapType.GBRQosInformationExtIEsExtensionValue{ 
-					Present:                   ngapType.GBRQosInformationExtIEsPresentAlternativeQoSParaSetList, 
+					Present: ngapType.GBRQosInformationExtIEsPresentAlternativeQoSParaSetList, 
 					AlternativeQoSParaSetList: altList, 
 				}, 
 			}, 
@@ -207,10 +207,10 @@ func (q *QoSFlow) BuildNgapQosFlowSetupRequestItem() (ngapType.QosFlowSetupReque
 	if q.IsGBRFlow() {
 		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile)
 
-		// Attach alternative QoS parameter sets when present
-		if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
-			parameter.GBRQosInformation.IEExtensions = buildAltQoSParaSetExt(q.AltQosProfiles) 
-		} //kassem
+		// // Attach alternative QoS parameter sets when present
+		// if parameter.GBRQosInformation != nil && len(q.AltQosProfiles) > 0 { //kassem
+		// 	parameter.GBRQosInformation.IEExtensions = buildAltQoSParaSetExt(q.AltQosProfiles) 
+		// } //kassem
 	}
 
 	var arpPriorityLevel int64
