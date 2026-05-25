@@ -172,7 +172,7 @@ func buildAltQoSParaSetExt(altProfiles []*models.QosData) *ngapType.ProtocolExte
 		List: []ngapType.GBRQosInformationExtIEs{ 
 			{ 
 				Id: ngapType.ProtocolExtensionID{ 
-					Value: ngapType.ProtocolIEIDAlternativeQoSParaSetList, 
+					Value: 220, 
 				}, 
 				Criticality: ngapType.Criticality{ 
 					Value: ngapType.CriticalityPresentIgnore, 
@@ -261,7 +261,7 @@ func (q *QoSFlow) BuildNgapQosFlowAddOrModifyRequestItem() (ngapType.QosFlowAddO
 		},
 	}
 
-	if q.IsGBRFlow() {
+	if q.IsGBRFlow() { //kassem
 		parameter.GBRQosInformation = buildGBRQosInformationFromModel(q.QoSProfile)
 	}
 
