@@ -165,8 +165,24 @@ func (c *SMContext) ApplyPccRules(decision *models.SmPolicyDecision) error {
 			return err
 		}
 		c.Log.Infof("[QNC-DEBUG] reached AddQosFlowWithAltProfiles rule=%s altQosIDs=%v", id, altQosIDs) //kassem
-		if tgtQosID != "" && len(altQosIDs) > 0 { //kassem
-			c.AddQosFlowWithAltProfiles(tgtPcc.QFI, tgtQosData, altQosIDs) 
+		if len(altQosIDs) > 0 { //kassem
+			qfi := tgtPcc.QFI //kassem
+			if existingFlow, ok := c.AdditonalQosFlows[qfi]; ok { //kassem
+				// Attach alt profiles to the existing flow without replacing it          //kassem
+				for _, altID := range altQosIDs { //kassem
+					if altProfile, ok := c.AltQosDatas[altID]; ok && altProfile != nil { //kassem
+						existingFlow.AltQosProfiles = append(existingFlow.AltQosProfiles, altProfile) //kassem
+					} //kassem
+				} //kassem
+				c.Log.Infof("[QNC] Attached %d alt profiles to existing QFI=%d", //kassem
+					len(existingFlow.AltQosProfiles), qfi) //kassem
+			} else if tgtQosID != "" && tgtQosData != nil && //kassem
+				tgtQosData.MaxbrDl != "" && tgtQosData.GbrDl != "" { //kassem
+				// No existing flow and primary QoS data has valid rates — create one     //kassem
+				c.AddQosFlowWithAltProfiles(qfi, tgtQosData, altQosIDs) //kassem
+			} else { //kassem
+				c.Log.Warnf("[QNC] Skipping AddQosFlow for QFI=%d: no existing flow and primary QoS data incomplete", qfi) //kassem
+			} //kassem
 		} //kassem
 
 		if err := checkUpPathChangeEvt(c, srcTcData, tgtTcData); err != nil {
