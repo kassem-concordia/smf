@@ -472,7 +472,7 @@ func (s *npcfService) SendSMPolicyAssociationTermination(smContext *smf_context.
 // per TS 29.512 §5.6.2.9 trigger QOS_NOTIF.                                   //kassem
 func (s *npcfService) SendSMPolicyAssociationUpdateQosNotif( //kassem
 	smContext *smf_context.SMContext, //kassem
-	notifEvents []models.QosNotifEvent, //kassem
+	qncReports []models.PcfSmPolicyControlQosNotificationControlInfo, //kassem
 ) error { //kassem
 	var client *SMPolicyControl.APIClient                             //kassem
 	for _, service := range smContext.SelectedPCFProfile.NfServices { //kassem
@@ -493,7 +493,7 @@ func (s *npcfService) SendSMPolicyAssociationUpdateQosNotif( //kassem
 		RepPolicyCtrlReqTriggers: []models.PolicyControlRequestTrigger{ //kassem
 			models.PolicyControlRequestTrigger_QOS_NOTIF, //kassem
 		}, //kassem
-		QosNotifEvents: notifEvents, //kassem
+		QncReports: qncReports, //kassem
 	} //kassem
 	request := &SMPolicyControl.UpdateSMPolicyRequest{ //kassem
 		SmPolicyId:                &smContext.SMPolicyID, //kassem
@@ -503,6 +503,6 @@ func (s *npcfService) SendSMPolicyAssociationUpdateQosNotif( //kassem
 	if err != nil {                                                            //kassem
 		return fmt.Errorf("QosNotif PCF update failed: %v", err) //kassem
 	} //kassem
-	smContext.Log.Infof("[QNC] PCF update sent: %d QosNotifEvents", len(notifEvents)) //kassem
-	return nil                                                                        //kassem
+	smContext.Log.Infof("[QNC] PCF update sent: %d QncReports", len(qncReports)) //kassem
+	return nil                                                                   //kassem
 } //kassem

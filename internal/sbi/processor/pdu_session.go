@@ -1569,42 +1569,29 @@ func (p *Processor) nasErrorResponse(
 }
 
 // HandlePDUSessionResourceNotify processes the QoS Notification from the gNB and forwards a SmPolicyControl Update to the PCF     //kassem
-func (p *Processor) HandlePDUSessionResourceNotify(
-	n2SmInfo []byte, smContext *smf_context.SMContext) error {
-	// Decode the PDUSessionResourceNotifyTransfer
-	transfer, err := smf_context.DecodePDUSessionResourceNotifyTransfer(n2SmInfo)
-	if err != nil {
-		return fmt.Errorf("decode PDUSessionResourceNotifyTransfer: %w", err)
-	}
-	if transfer == nil || transfer.QosFlowNotifyList == nil {
-		smContext.Log.Warnf("[QNC] Empty QosFlowNotifyList in notify transfer")
-		return nil
-	}
-	// Build QosNotifEvents for PCF
-	var notifEvents []models.QosNotifEvent
-	for _, item := range transfer.QosFlowNotifyList.List {
-		notifType := models.QosNotifType_NOT_GUARANTEED
-		if item.NotificationCause.Value == ngapType.NotificationCausePresentFulfilled {
-			notifType = models.QosNotifType_GUARANTEED
-		}
-		notifEvents = append(notifEvents, models.QosNotifEvent{
-			QosNotifType: notifType,
-			Flows: []models.Flows{{
-				QfiList: []int32{int32(item.QosFlowIdentifier.Value)},
-			}},
-		})
-		smContext.Log.Infof("[QNC] QFI=%d notifType=%s",
-			item.QosFlowIdentifier.Value, notifType)
-	}
-	if len(notifEvents) == 0 {
-		return nil
-	}
-	// Send SmPolicyControl Update to PCF
-	if err := p.Consumer().SendSMPolicyAssociationUpdateQosNotif(
-		smContext, notifEvents); err != nil {
-		smContext.Log.Errorf("[QNC] SendSMPolicyAssociationUpdateQosNotif failed: %v", err)
-		return err
-	}
-	smContext.Log.Infof("[QNC] Forwarded %d QosNotifEvents to PCF", len(notifEvents))
-	return nil
+func (p *Processor) HandlePDUSessionResourceNotify( //kassem
+	n2SmInfo []byte, smContext *smf_context.SMContext) error { //kassem
+	transfer, err := smf_context.DecodePDUSessionResourceNotifyTransfer(n2SmInfo) //kassem
+	if err != nil {                                                               //kassem
+		return fmt.Errorf("decode notify transfer: %w", err) //kassem
+	} //kassem
+	if transfer == nil || transfer.QosFlowNotifyList == nil { //kassem
+		return nil //kassem
+	} //kassem
+	var qncReports []models.PcfSmPolicyControlQosNotificationControlInfo //kassem
+	for _, item := range transfer.QosFlowNotifyList.List {               //kassem
+		notifType := models.QosNotifType_NOT_GUARANTEED                                 //kassem
+		if item.NotificationCause.Value == ngapType.NotificationCausePresentFulfilled { //kassem
+			notifType = models.QosNotifType_GUARANTEED //kassem
+		} //kassem
+		qncReports = append(qncReports, models.PcfSmPolicyControlQosNotificationControlInfo{ //kassem
+			NotifType: notifType, //kassem
+		}) //kassem
+		smContext.Log.Infof("[QNC] QFI=%d notifType=%s", //kassem
+			item.QosFlowIdentifier.Value, notifType) //kassem
+	} //kassem
+	if len(qncReports) == 0 { //kassem
+		return nil //kassem
+	} //kassem
+	return p.Consumer().SendSMPolicyAssociationUpdateQosNotif(smContext, qncReports) //kassem
 } //kassem
