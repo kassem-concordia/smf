@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/free5gc/aper"
 	"github.com/free5gc/nas/nasConvert"
 	"github.com/free5gc/nas/nasMessage"
 	"github.com/free5gc/ngap/ngapType"
@@ -182,7 +183,6 @@ type SMContext struct {
 	QosDatas            map[string]*models.QosData
 	// AltQosDatas stores the alternative QoS parameter sets received from the PCF.
 	AltQosDatas map[string]*models.QosData //kassem
-
 
 	UpPathChgEarlyNotification map[string]*EventExposureNotification // Key: Uri+NotifId
 	UpPathChgLateNotification  map[string]*EventExposureNotification // Key: Uri+NotifId
@@ -1009,3 +1009,13 @@ func (smContext *SMContext) RemoveQFI(qosId string) {
 		smContext.RemoveQosFlow(qfi)
 	}
 }
+
+func DecodePDUSessionResourceNotifyTransfer( //kassem
+	b []byte, //kassem
+) (*ngapType.PDUSessionResourceNotifyTransfer, error) { //kassem
+	transfer := &ngapType.PDUSessionResourceNotifyTransfer{}                  //kassem
+	if err := aper.UnmarshalWithParams(b, transfer, "valueExt"); err != nil { //kassem
+		return nil, fmt.Errorf("decode PDUSessionResourceNotifyTransfer: %w", err) //kassem
+	} //kassem
+	return transfer, nil //kassem
+} //kassem

@@ -64,11 +64,3 @@ func (p *Processor) SendReleaseNotification(smContext *smf_context.SMContext) {
 		smContext.Log.Traceln("Send SMContext Status Notification successfully")
 	}
 }
-
-func DecodePDUSessionResourceNotifyTransfer(b []byte) (*ngapType.PDUSessionResourceNotifyTransfer, error) { //kassem
-	transfer := &ngapType.PDUSessionResourceNotifyTransfer{}
-	if err := aper.UnmarshalWithParams(b, transfer, "valueExt"); err != nil {
-		return nil, err
-	}
-	return transfer, nil
-} //kassem
