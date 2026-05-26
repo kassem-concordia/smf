@@ -972,6 +972,12 @@ func (p *Processor) HandlePDUSessionSMContextUpdate(
 		// TODO: implement sleep wait in concurrent architecture
 		smContext.SetState(smf_context.ModificationPending)
 		response.JsonData.N2SmInfo = &models.RefToBinaryData{ContentId: "Handover"}
+	case models.N2SmInfoType_PDU_RES_NTY: //kassem
+		smContext.Log.Infof("[QNC] Received PDUSessionResourceNotify from AMF")
+		if err := p.HandlePDUSessionResourceNotify(
+			body.BinaryDataN2SmInformation, smContext); err != nil {
+			smContext.Log.Errorf("[QNC] HandlePDUSessionResourceNotify failed: %v", err)
+		} //kassem
 	}
 
 	switch smContextUpdateData.HoState {
@@ -1561,3 +1567,44 @@ func (p *Processor) nasErrorResponse(
 	c.Set(sbi.IN_PB_DETAILS_CTX_STR, errBody.JsonData.Error.Cause)
 	c.JSON(status, errBody)
 }
+
+// HandlePDUSessionResourceNotify processes the QoS Notification from the gNB and forwards a SmPolicyControl Update to the PCF     //kassem
+func (p *Processor) HandlePDUSessionResourceNotify(
+	n2SmInfo []byte, smContext *smf_context.SMContext) error {
+	// Decode the PDUSessionResourceNotifyTransfer
+	transfer, err := smf_context.DecodePDUSessionResourceNotifyTransfer(n2SmInfo)
+	if err != nil {
+		return fmt.Errorf("decode PDUSessionResourceNotifyTransfer: %w", err)
+	}
+	if transfer == nil || transfer.QosFlowNotifyList == nil {
+		smContext.Log.Warnf("[QNC] Empty QosFlowNotifyList in notify transfer")
+		return nil
+	}
+	// Build QosNotifEvents for PCF
+	var notifEvents []models.QosNotifEvent
+	for _, item := range transfer.QosFlowNotifyList.List {
+		notifType := models.QosNotifType_NOT_GUARANTEED
+		if item.NotificationCause.Value == ngapType.NotificationCausePresentFulfilled {
+			notifType = models.QosNotifType_GUARANTEED
+		}
+		notifEvents = append(notifEvents, models.QosNotifEvent{
+			QosNotifType: notifType,
+			Flows: []models.Flows{{
+				QfiList: []int32{int32(item.QosFlowIdentifier.Value)},
+			}},
+		})
+		smContext.Log.Infof("[QNC] QFI=%d notifType=%s",
+			item.QosFlowIdentifier.Value, notifType)
+	}
+	if len(notifEvents) == 0 {
+		return nil
+	}
+	// Send SmPolicyControl Update to PCF
+	if err := p.Consumer().SendSMPolicyAssociationUpdateQosNotif(
+		smContext, notifEvents); err != nil {
+		smContext.Log.Errorf("[QNC] SendSMPolicyAssociationUpdateQosNotif failed: %v", err)
+		return err
+	}
+	smContext.Log.Infof("[QNC] Forwarded %d QosNotifEvents to PCF", len(notifEvents))
+	return nil
+} //kassem

@@ -467,3 +467,42 @@ func (s *npcfService) SendSMPolicyAssociationTermination(smContext *smf_context.
 	}
 	return nil
 }
+
+// SendSMPolicyAssociationUpdateQosNotif forwards QNC events to the PCF        //kassem
+// per TS 29.512 §5.6.2.9 trigger QOS_NOTIF.                                   //kassem
+func (s *npcfService) SendSMPolicyAssociationUpdateQosNotif( //kassem
+	smContext *smf_context.SMContext, //kassem
+	notifEvents []models.QosNotifEvent, //kassem
+) error { //kassem
+	var client *SMPolicyControl.APIClient                             //kassem
+	for _, service := range smContext.SelectedPCFProfile.NfServices { //kassem
+		if service.ServiceName == models.ServiceName_NPCF_SMPOLICYCONTROL { //kassem
+			client = s.getSMPolicyControlClient(service.ApiPrefix) //kassem
+		} //kassem
+	} //kassem
+	if client == nil { //kassem
+		return errors.Errorf("smContext not selected PCF") //kassem
+	} //kassem
+	ctx, _, err := smf_context.GetSelf(). //kassem
+						GetTokenCtx(models.ServiceName_NPCF_SMPOLICYCONTROL, //kassem
+			models.NrfNfManagementNfType_PCF) //kassem
+	if err != nil { //kassem
+		return err //kassem
+	} //kassem
+	updateData := models.SmPolicyUpdateContextData{ //kassem
+		RepPolicyCtrlReqTriggers: []models.PolicyControlRequestTrigger{ //kassem
+			models.PolicyControlRequestTrigger_QOS_NOTIF, //kassem
+		}, //kassem
+		QosNotifEvents: notifEvents, //kassem
+	} //kassem
+	request := &SMPolicyControl.UpdateSMPolicyRequest{ //kassem
+		SmPolicyId:                &smContext.SMPolicyID, //kassem
+		SmPolicyUpdateContextData: &updateData,           //kassem
+	} //kassem
+	_, err = client.IndividualSMPolicyDocumentApi.UpdateSMPolicy(ctx, request) //kassem
+	if err != nil {                                                            //kassem
+		return fmt.Errorf("QosNotif PCF update failed: %v", err) //kassem
+	} //kassem
+	smContext.Log.Infof("[QNC] PCF update sent: %d QosNotifEvents", len(notifEvents)) //kassem
+	return nil                                                                        //kassem
+} //kassem
